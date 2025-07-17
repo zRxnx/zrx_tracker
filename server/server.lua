@@ -6,11 +6,17 @@ CreateThread(function()
     lib.versionCheck('zrxnx/zrx_tracker')
 
     local toReturn = {}
+    local xPlayer
+
     while true do
         toReturn = GetBlipData()
 
         for player, state in pairs(ZRX_UTIL.getPlayers()) do
             xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
+
+            if not xPlayer then
+                goto continue
+            end
 
             if not toReturn[xPlayer.job.name] then
                 goto continue
@@ -39,7 +45,6 @@ if ZRX_UTIL.inv == 'ox' then
     ZRX_UTIL.invObj:registerHook('swapItems', function(payload)
         --print(json.encode(payload, {indent = true}))
         local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(payload.source)
-        local xTarget
         local itemCount = ZRX_UTIL.invObj:GetItemCount(payload.source, Config.Item)
         print(itemCount)
 

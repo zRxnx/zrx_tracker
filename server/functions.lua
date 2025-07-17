@@ -7,6 +7,10 @@ GetBlipData = function()
     for player, state in pairs(ZRX_UTIL.getPlayers()) do
         xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
 
+        if not xPlayer then
+            goto continue
+        end
+
         if not Config.Jobs[xPlayer.job.name] then
             goto continue
         end
@@ -96,23 +100,27 @@ NotifyAllInJob = function(player, string)
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
         xTarget = ZRX_UTIL.fwObj.GetPlayerFromId(target)
 
-        --if player == target then
-        --    goto continue
-        --end
+        if player == target then
+            goto continue
+        end
+
+        if not xPlayer or not xTarget then
+            goto continue
+        end
 
         if xPlayer.job.name ~= xTarget.job.name then
             goto continue
         end
 
-        -- if ZRX_UTIL.inv == 'ox' then
-        --     if ZRX_UTIL.invObj:GetItemCount(target, Config.Item) <= 0 then
-        --         goto continue
-        --     end
-        -- else
-        --     if not xTarget.hasItem(Config.Item) then
-        --         goto continue
-        --     end
-        -- end
+        if ZRX_UTIL.inv == 'ox' then
+            if ZRX_UTIL.invObj:GetItemCount(target, Config.Item) <= 0 then
+                goto continue
+            end
+        else
+            if not xTarget.hasItem(Config.Item) then
+                goto continue
+            end
+        end
 
         Config.Notify(target, string)
 
@@ -127,9 +135,9 @@ RemoveTracker = function(player)
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
         xTarget = ZRX_UTIL.fwObj.GetPlayerFromId(target)
 
-        --if player == target then
-        --    goto continue
-        --end
+        if not xPlayer or not xTarget then
+            goto continue
+        end
 
         if xPlayer.job.name ~= xTarget.job.name then
             goto continue
