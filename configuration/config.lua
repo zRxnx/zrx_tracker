@@ -95,7 +95,8 @@ Config.GetDeathStatus = function(player)
     if IsDuplicityVersion() then
         local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
 
-        return MySQL.scalar.await('SELECT is_dead FROM users WHERE identifier = ?', { xPlayer.identifier })
+        --| Default death check, depends on your death system
+        return exports.oxmysql.scalar_async('SELECT is_dead FROM users WHERE identifier = ?', { xPlayer.identifier })
     else
         return false
     end
