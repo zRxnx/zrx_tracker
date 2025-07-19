@@ -1,4 +1,3 @@
-Wait(1000) --| needs to be there to fix some race conditions for the client callback isInWater
 
 NOTIFY = {}
 
@@ -6,12 +5,17 @@ CreateThread(function()
     lib.versionCheck('zrxnx/zrx_tracker')
 
     local toReturn = {}
+    local toReturnShared = {}
     local xPlayer
+    local jobIndex
+
+    Wait(1000) --| needs to be there to fix some race conditions for the client callback isInWater
 
     while true do
         toReturn = GetBlipData()
 
         for player, state in pairs(ZRX_UTIL.getPlayers()) do
+            toReturnShared = {}
             xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
 
             if not xPlayer then
@@ -32,7 +36,23 @@ CreateThread(function()
                 end
             end
 
-            TriggerClientEvent('zrx_tracker:client:getData', player, toReturn[xPlayer.job.name])
+            jobIndex = FindJobInTable(xPlayer.job.name)
+            if jobIndex then
+                for job, color in pairs(Config.SharedJobs[jobIndex]) do
+                    print(player, xPlayer.job.name, job, color)
+                    if toReturn[job] then
+                        for index, entry in pairs(toReturn[job]) do
+                            toReturnShared[index] = entry
+                        end
+                    end
+                end
+
+                print(json.encode(toReturnShared, { indent = true}))
+
+                TriggerClientEvent('zrx_tracker:client:getData', player, toReturnShared)
+            else
+                TriggerClientEvent('zrx_tracker:client:getData', player, toReturn[xPlayer.job.name])
+            end
 
             ::continue::
         end

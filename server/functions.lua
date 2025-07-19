@@ -3,6 +3,7 @@ GetBlipData = function()
     local xPlayer
     local vehicle = 0
     local ped = 0
+    local jobIndex
 
     for player, state in pairs(ZRX_UTIL.getPlayers()) do
         xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
@@ -12,6 +13,10 @@ GetBlipData = function()
         end
 
         if not Config.Jobs[xPlayer.job.name] then
+            goto continue
+        end
+
+        if not Config.ShowPlayer(player) then
             goto continue
         end
 
@@ -63,6 +68,12 @@ GetBlipData = function()
             toReturn[xPlayer.job.name][player].death = false
 
             NotifyAllInJob(player, Strings.activate_tracker_death:format(xPlayer.getName()))
+        end
+
+        jobIndex = FindJobInTable(xPlayer.job.name)
+        if jobIndex then
+            toReturn[xPlayer.job.name][player].sharedColor = Config.SharedJobs[jobIndex][xPlayer.job.name]
+            toReturn[xPlayer.job.name][player].job = xPlayer.job.name
         end
 
         ped = GetPlayerPed(player)
@@ -147,4 +158,16 @@ RemoveTracker = function(player)
 
         ::continue::
     end
+end
+
+FindJobInTable = function(job)
+    for index, data in pairs(Config.SharedJobs) do
+        for job2, data2 in pairs(data) do
+            if job == job2 then
+                return index
+            end
+        end
+    end
+
+    return false
 end

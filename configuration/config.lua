@@ -11,21 +11,28 @@ Config.Disable = {
     death = true,
 }
 
-Config.ShowNotify = {
+Config.ShowNotify = { --| onDeath and onWater only sends when Config.Disable is enabled
     onDeath = true,
     onSend = true,
     onRemove = true,
     onWater = true,
 }
 
-Config.Jobs = {
+Config.Jobs = { --| Jobs that have tracker
     police = true,
     ambulance = true,
     mechanic = true,
 }
 
+Config.SharedJobs = { --| These jobs see each other tracker | color needs to be in rgba format
+    {
+        police = { r = 0, g = 0, b = 255, a = 255 },
+        ambulance = { r = 255, g = 0, b = 0, a = 255 },
+    }
+}
+
 Config.Blip = {
-    changeOwn = true,
+    changeOwn = true, --| Changes the default arrow blip
 
     types = { --| Blip sprites
         main = 1,
@@ -53,7 +60,7 @@ Config.Blip = {
         priority = 100,
         category = 7,
 
-        short = false,
+        short = false, --| Not recommended
 
         friendly = true,
         heading = true,
@@ -91,12 +98,17 @@ Config.Notify = function(player, msg, title, type, color, time)
     end
 end
 
+--| For example if the player is in aduty mode
+Config.ShowPlayer = function(player)
+    return true
+end
+
 Config.GetDeathStatus = function(player)
     if IsDuplicityVersion() then
         local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
 
         --| Default death check, depends on your death system
-        return exports.oxmysql.scalar_async('SELECT is_dead FROM users WHERE identifier = ?', { xPlayer.identifier })
+        return exports.oxmysql:scalar_async('SELECT is_dead FROM users WHERE identifier = ?', { xPlayer.identifier })
     else
         return false
     end

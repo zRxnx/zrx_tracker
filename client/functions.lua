@@ -1,3 +1,4 @@
+---@diagnostic disable: param-type-mismatch
 RemoveBlips = function()
     for player, blip in pairs(ACTIVE_BLIPS) do
         RemoveBlip(blip)
@@ -11,7 +12,6 @@ CreateBlips = function(data)
     local color
     local blip
     local string
-    local ped
 
     BREAK_SIREN = true
 
@@ -51,6 +51,12 @@ CreateBlips = function(data)
             SetBlipColour(blip, tonumber(('0x%02X%02X%02X%02X'):format(color.r, color.g, color.b, color.a)))
         else
             SetBlipColour(blip, color)
+        end
+
+        ShowCrewIndicatorOnBlip(blip, false)
+        if blipData.sharedColor then
+            ShowCrewIndicatorOnBlip(blip, true)
+            SetBlipSecondaryColour(blip, blipData.sharedColor.r, blipData.sharedColor.g, blipData.sharedColor.b)
         end
 
         SetBlipScale(blip, Config.Blip.extra.scale)

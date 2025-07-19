@@ -18,6 +18,7 @@ An advanced tracker system for FiveM
 - Different types: main, automobile, bike, heli, boat, water, death
 - Color System
 - Blip settings: friendly, heading, height, vision, flash, siren, category, priority
+- Shared Job system: Shared GPS with other jobs
 - Update checker
 - Optimized
 - Synced
