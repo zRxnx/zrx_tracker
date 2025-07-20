@@ -10,11 +10,12 @@ An advanced tracker system for FiveM
 
 ### Features
 
-- Own sync system
+- Custom sync system
+- Responsible live sync withing onesync range
 - Disable in water or on death
 - Show Notify on action
 - Restricted to jobs
-- Change own blip
+- Change self player blip
 - Different types: main, automobile, bike, heli, boat, water, death
 - Color System
 - Blip settings: friendly, heading, height, vision, flash, siren, category, priority

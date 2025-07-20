@@ -57,6 +57,17 @@ if IsDuplicityVersion() then
         return players
     end
 else
+    RegisterNetEvent('esx:playerLoaded', function(xPlayer)
+        ZRX_UTIL.fwObj.PlayerData = xPlayer
+        while not ZRX_UTIL.fwObj.PlayerData.ped or not DoesEntityExist(ZRX_UTIL.fwObj.PlayerData.ped) do Wait(0) end
+        ZRX_UTIL.fwObj.PlayerLoaded = true
+    end)
+
+    ZRX_UTIL.fwObj.SecureNetEvent('esx:onPlayerLogout', function()
+        ZRX_UTIL.fwObj.PlayerLoaded = false
+        ZRX_UTIL.fwObj.PlayerData = {}
+    end)
+
     ZRX_UTIL.drawText3D = function(x, y, z, str, length, r, g, b, a)
         local onScreen, _x, _y = GetScreenCoordFromWorldCoord(x, y, z)
         if not onScreen then return end

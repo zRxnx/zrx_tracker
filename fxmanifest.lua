@@ -5,7 +5,7 @@ use_experimental_fxv2_oal 'yes'
 
 name 'zrx_tracker'
 author 'zRxnx'
-version '1.1.0'
+version '1.2.0'
 description 'Advanced tracker system'
 repository 'https://github.com/zrxnx/zrx_tracker'
 
@@ -22,6 +22,7 @@ dependencies {
 shared_scripts {
     '@ox_lib/init.lua',
     'utils.lua',
+    'shared/*.lua',
     'configuration/*.lua',
 }
 
@@ -30,5 +31,6 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/*.lua',
 }

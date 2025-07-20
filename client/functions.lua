@@ -12,20 +12,43 @@ CreateBlips = function(data)
     local color
     local blip
     local string
+    local entBlip
+    local sharedColor = {}
 
     BREAK_SIREN = true
 
     for player, blipData in pairs(data) do
-        print('blipData', player)
+        sharedColor = {}
+        --print('blipData', player)
+        --print(json.encode(blipData, {indent = true}))
         if player == cache.serverId and Config.Blip.changeOwn then
-            print('own')
+            --print('own')
             blip = GetMainPlayerBlipId()
+        elseif blipData.isNear then
+            entBlip = GetBlipFromEntity(blipData.entity)
+            if DoesBlipExist(entBlip) then
+                blip = entBlip
+            else
+                blip = AddBlipForEntity(blipData.entity)
+                ACTIVE_CLIENT_BLIPS[player] = blip
+            end
         elseif player ~= cache.serverId then
-            print('other')
+            --print('other', player)
+            print(#(vec3(blipData.coords.x, blipData.coords.y, blipData.coords.z) - GetEntityCoords(cache.ped)))
+            if #(blipData.coords - GetEntityCoords(cache.ped)) < 424 then
+                goto continue
+            end
+
+            if DoesBlipExist(ACTIVE_BLIPS[player]) then
+                goto continue
+            end
+
             blip = AddBlipForCoord(blipData.coords.x, blipData.coords.y, blipData.coords.z)
+            ACTIVE_BLIPS[player] = blip
+        else
+            goto continue
         end
 
-        ACTIVE_BLIPS[player] = blip
         sprite = Config.Blip.types.main
         color = Config.Blip.color.default
         string = ('[%s] %s'):format(player, blipData.name)
@@ -53,10 +76,12 @@ CreateBlips = function(data)
             SetBlipColour(blip, color)
         end
 
-        ShowCrewIndicatorOnBlip(blip, false)
-        if blipData.sharedColor then
-            ShowCrewIndicatorOnBlip(blip, true)
-            SetBlipSecondaryColour(blip, blipData.sharedColor.r, blipData.sharedColor.g, blipData.sharedColor.b)
+        if blipData.shared then
+            --print('shared', player, blipData.sharedIndex, blipData.job)
+            sharedColor = Config.SharedJobs[blipData.sharedIndex][blipData.job]
+
+            ShowCrewIndicatorOnBlip(blip, blipData.shared)
+            SetBlipSecondaryColour(blip, sharedColor.r, sharedColor.g, sharedColor.b)
         end
 
         SetBlipScale(blip, Config.Blip.extra.scale)
@@ -76,28 +101,118 @@ CreateBlips = function(data)
         BeginTextCommandSetBlipName('STRING')
         AddTextComponentSubstringPlayerName(string)
         EndTextCommandSetBlipName(blip)
+
+        ::continue::
     end
 
     if Config.Blip.extra.siren then
-        StartSirenThread(data)
+        CreateThread(function()
+            StartSirenThread(data)
+        end)
     end
 end
 
-local BREAK = false
+GetBlipData = function()
+    local player
+    local playerPed
+    local toReturn = {}
+    local isInWater = false
+    local deathStatus = false
+    local jobIndex
+    local vehicle = 0
+    local job
+    local name
+    local hasItem
+
+    for index, playerId in pairs(GetActivePlayers()) do
+        player = GetPlayerServerId(playerId)
+        playerPed = GetPlayerPed(playerId)
+        job = Player(player)?.state?.job?.name or 'undefined'
+        name = Player(player)?.state?.name or GetPlayerName(player)
+        hasItem = Player(player)?.state?['zrx_tracker:hasItem'] or true
+
+        if player == cache.serverId then
+            goto continue
+        end
+
+        if ZRX_UTIL.fwObj.PlayerData.job.name ~= job then
+            goto continue
+        end
+
+        if not Config.ShowPlayer(player) then
+            goto continue
+        end
+
+        if not hasItem then
+            goto continue
+        end
+
+        toReturn[player] = {}
+
+        isInWater = IsEntityInWater(playerPed)
+
+        if isInWater then
+            if Config.Disable.water then
+                toReturn[player] = nil
+                goto continue
+            end
+
+            toReturn[player].isInWater = true
+        end
+
+        deathStatus = Config.GetDeathStatus(player)
+
+        if deathStatus then
+            if Config.Disable.death then
+                toReturn[player] = nil
+                goto continue
+            end
+
+            toReturn[player].death = true
+        end
+
+        jobIndex = FindJobInTable(job)
+        if jobIndex then
+            toReturn[player].shared = true
+            toReturn[player].sharedIndex = jobIndex
+        end
+
+        toReturn[player].coords = GetEntityCoords(playerPed)
+        toReturn[player].heading = GetEntityHeading(playerPed)
+        toReturn[player].name = name
+        toReturn[player].job = job
+        toReturn[player].isNear = true
+        toReturn[player].entity = playerPed
+        vehicle = GetVehiclePedIsIn(playerPed, false)
+
+        toReturn[player].vehType = ''
+        if DoesEntityExist(vehicle) and not toReturn[player].death then
+            toReturn[player].vehType = GetVehicleType(vehicle)
+
+            toReturn[player].siren = false
+            if Config.Blip.extra.siren then
+                toReturn[player].siren = IsVehicleSirenOn(vehicle)
+            end
+        end
+
+        ::continue::
+    end
+
+    return toReturn
+end
+
 StartSirenThread = function(data)
-    BREAK = true
+    BREAK_SIREN = true
     Wait(500)
-    BREAK = false
+    BREAK_SIREN = false
 
     while true do
-        if BREAK then
+        if BREAK_SIREN then
             return
         end
 
-        print('loop')
         for player, blipData in pairs(data) do
             if not blipData.siren then
-                print('active')
                 goto continue
             end
 

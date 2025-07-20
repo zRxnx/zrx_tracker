@@ -72,14 +72,15 @@ GetBlipData = function()
 
         jobIndex = FindJobInTable(xPlayer.job.name)
         if jobIndex then
-            toReturn[xPlayer.job.name][player].sharedColor = Config.SharedJobs[jobIndex][xPlayer.job.name]
-            toReturn[xPlayer.job.name][player].job = xPlayer.job.name
+            toReturn[xPlayer.job.name][player].shared = true
+            toReturn[xPlayer.job.name][player].sharedIndex = jobIndex
         end
 
         ped = GetPlayerPed(player)
         toReturn[xPlayer.job.name][player].coords = GetEntityCoords(ped)
         toReturn[xPlayer.job.name][player].heading = GetEntityHeading(ped)
         toReturn[xPlayer.job.name][player].name = xPlayer.getName()
+        toReturn[xPlayer.job.name][player].job = xPlayer.job.name
         vehicle = GetVehiclePedIsIn(ped, false)
 
         toReturn[xPlayer.job.name][player].vehType = ''
@@ -154,20 +155,9 @@ RemoveTracker = function(player)
             goto continue
         end
 
-        TriggerClientEvent('zrx_tracker:client:removeTracker', target, player)
+        TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, false)
+        TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, true)
 
         ::continue::
     end
-end
-
-FindJobInTable = function(job)
-    for index, data in pairs(Config.SharedJobs) do
-        for job2, data2 in pairs(data) do
-            if job == job2 then
-                return index
-            end
-        end
-    end
-
-    return false
 end
