@@ -12,7 +12,11 @@ GetBlipData = function()
             goto continue
         end
 
-        if not Config.Jobs[xPlayer.job.name] then
+        if Config.Jobs.__MODE__ == 'whitelist' and not Config.Jobs[xPlayer.job.name] or Config.Jobs[xPlayer.job.name] then
+            goto continue
+        end
+
+        if Player(player).state['zrx_tracker:disable'] then
             goto continue
         end
 
@@ -42,6 +46,10 @@ GetBlipData = function()
 
         local isInWater = lib.callback.await('zrx_tracker:client:isInWater', player)
 
+        if isInWater and Config.Disable.water then
+            goto continue
+        end
+
         toReturn[xPlayer.job.name][player].isInWater = isInWater
 
         if isInWater then
@@ -55,6 +63,10 @@ GetBlipData = function()
         end
 
         local deathStatus = Config.GetDeathStatus(player)
+
+        if deathStatus and Config.Disable.death then
+            goto continue
+        end
 
         toReturn[xPlayer.job.name][player].death = deathStatus
 
@@ -91,12 +103,6 @@ GetBlipData = function()
             if Config.Blip.extra.siren then
                 toReturn[xPlayer.job.name][player].siren = IsVehicleSirenOn(vehicle)
             end
-        end
-
-        if toReturn[xPlayer.job.name][player].isInWater and Config.Disable.water then
-            toReturn[xPlayer.job.name][player] = nil
-        elseif toReturn[xPlayer.job.name][player].death and Config.Disable.death then
-            toReturn[xPlayer.job.name][player] = nil
         end
 
         ::continue::
@@ -161,3 +167,8 @@ RemoveTracker = function(player)
         ::continue::
     end
 end
+
+DisableTracker = function(player, state)
+    Player(player).state:set('zrx_tracker:disable', state, true)
+end
+exports('disableTracker', DisableTracker)

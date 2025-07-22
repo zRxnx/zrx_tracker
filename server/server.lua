@@ -39,6 +39,12 @@ CreateThread(function()
                 TriggerClientEvent('zrx_tracker:client:getData', player, toReturn[Player(player).state.job.name])
             end
 
+            TriggerEvent('zrx_tracker:server:onSend', {
+                player = player,
+                playerJob = Player(player).state.job.name,
+                data = toReturn[Player(player).state.job.name][player]
+            })
+
             ::continue::
         end
 
@@ -160,7 +166,6 @@ AddEventHandler('esx:setJob', function(target, job)
     local jobIndex
 
     for player, state in pairs(ZRX_UTIL.getPlayers()) do
-
         if not Player(player).state?.job?.name then
             goto continue
         end

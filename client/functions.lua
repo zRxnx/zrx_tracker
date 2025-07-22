@@ -102,6 +102,12 @@ CreateBlips = function(data)
         AddTextComponentSubstringPlayerName(string)
         EndTextCommandSetBlipName(blip)
 
+        TriggerEvent('zrx_tracker:client:onSend', {
+            player = player,
+            playerJob = blipData.job,
+            data = blipData
+        })
+
         ::continue::
     end
 
@@ -135,7 +141,15 @@ GetBlipData = function()
             goto continue
         end
 
+        if Config.Jobs.__MODE__ == 'whitelist' and not Config.Jobs[job] or Config.Jobs[job] then
+            goto continue
+        end
+
         if ZRX_UTIL.fwObj.PlayerData.job.name ~= job then
+            goto continue
+        end
+
+        if Player(player).state['zrx_tracker:disable'] then
             goto continue
         end
 

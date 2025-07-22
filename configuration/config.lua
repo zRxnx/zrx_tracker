@@ -22,6 +22,8 @@ Config.ShowNotify = { --| onDeath and onWater only sends when Config.Disable is 
 }
 
 Config.Jobs = { --| Jobs that have tracker
+    __MODE__ = 'whitelist', --| whitelist / blacklist
+
     police = true,
     ambulance = true,
     mechanic = true,

@@ -23,8 +23,21 @@ An advanced tracker system for FiveM
 - Update checker
 - Optimized
 - Synced
-- 0.0 ms on idle
-- 0.0 ms while in use
+
+### API
+
+#### Exports
+
+- disableTracker (server)
+
+#### Statebags
+
+- zrx_tracker:disable
+
+#### Events
+
+- zrx_tracker:server:onSend (server)
+- zrx_tracker:client:onSend (client)
 
 ## Requirements
 

@@ -59,7 +59,10 @@ if IsDuplicityVersion() then
 else
     RegisterNetEvent('esx:playerLoaded', function(xPlayer)
         ZRX_UTIL.fwObj.PlayerData = xPlayer
-        while not ZRX_UTIL.fwObj.PlayerData.ped or not DoesEntityExist(ZRX_UTIL.fwObj.PlayerData.ped) do Wait(0) end
+        while not DoesEntityExist(cache.ped) do
+            Wait(0)
+        end
+
         ZRX_UTIL.fwObj.PlayerLoaded = true
     end)
 
