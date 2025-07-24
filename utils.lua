@@ -59,6 +59,7 @@ if IsDuplicityVersion() then
 else
     RegisterNetEvent('esx:playerLoaded', function(xPlayer)
         ZRX_UTIL.fwObj.PlayerData = xPlayer
+
         while not DoesEntityExist(cache.ped) do
             Wait(0)
         end
@@ -66,9 +67,13 @@ else
         ZRX_UTIL.fwObj.PlayerLoaded = true
     end)
 
-    ZRX_UTIL.fwObj.SecureNetEvent('esx:onPlayerLogout', function()
+    RegisterNetEvent('esx:onPlayerLogout', function()
         ZRX_UTIL.fwObj.PlayerLoaded = false
         ZRX_UTIL.fwObj.PlayerData = {}
+    end)
+
+    RegisterNetEvent('esx:setJob', function(job, lastJob)
+        ZRX_UTIL.fwObj.PlayerData.job = job
     end)
 
     ZRX_UTIL.drawText3D = function(x, y, z, str, length, r, g, b, a)

@@ -5,7 +5,7 @@ use_experimental_fxv2_oal 'yes'
 
 name 'zrx_tracker'
 author 'zRxnx'
-version '1.2.1'
+version '1.3.0'
 description 'Advanced tracker system'
 repository 'https://github.com/zrxnx/zrx_tracker'
 

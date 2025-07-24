@@ -4,45 +4,47 @@ NOTIFY = {}
 CreateThread(function()
     lib.versionCheck('zrxnx/zrx_tracker')
 
-    local toReturn = {}
-    local toReturnShared = {}
-    local jobIndex
-
-    Wait(1000) --| needs to be there to fix some race conditions for the client callback isInWater
+    local toReturn, toReturnShared, jobData = {}, {}, {}
+    local sharedJobs, playerState, jobIndex, job
 
     while true do
         toReturn = GetBlipData()
 
-        for player, state in pairs(ZRX_UTIL.getPlayers()) do
+        for player, _ in pairs(ZRX_UTIL.getPlayers()) do
             toReturnShared = {}
+            playerState = Player(player).state
+            job = playerState?.job?.name
+            jobData = toReturn[job]
 
-            if not Player(player).state?.job?.name then
+            if not job or not jobData then
                 goto continue
             end
 
-            if not toReturn[Player(player).state.job.name] then
-                goto continue
-            end
+            jobIndex = FindJobInTable(job)
+            sharedJobs = jobIndex and Config.SharedJobs[jobIndex] or nil
 
-            jobIndex = FindJobInTable(Player(player).state.job.name)
-            if jobIndex then
-                for job, color in pairs(Config.SharedJobs[jobIndex]) do
-                    if toReturn[job] then
-                        for index, entry in pairs(toReturn[job]) do
-                            toReturnShared[index] = entry
+            if sharedJobs then
+                for sharedJob, _ in pairs(sharedJobs) do
+                    for targetPlayer, entry in pairs(toReturn[sharedJob] or {}) do
+                        if ShouldInclude(entry, player) then
+                            toReturnShared[targetPlayer] = entry
                         end
                     end
                 end
-
-                TriggerClientEvent('zrx_tracker:client:getData', player, toReturnShared)
             else
-                TriggerClientEvent('zrx_tracker:client:getData', player, toReturn[Player(player).state.job.name])
+                for targetPlayer, entry in pairs(jobData) do
+                    if ShouldInclude(entry, player) then
+                        toReturnShared[targetPlayer] = entry
+                    end
+                end
             end
+
+            TriggerClientEvent('zrx_tracker:client:getData', player, toReturnShared)
 
             TriggerEvent('zrx_tracker:server:onSend', {
                 player = player,
-                playerJob = Player(player).state.job.name,
-                data = toReturn[Player(player).state.job.name][player]
+                playerJob = job,
+                data = jobData[player]
             })
 
             ::continue::
@@ -54,15 +56,15 @@ end)
 
 if ZRX_UTIL.inv == 'ox' then
     ZRX_UTIL.invObj:registerHook('swapItems', function(payload)
-        local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(payload.source)
         local itemCount = ZRX_UTIL.invObj:GetItemCount(payload.source, Config.Item)
 
         if Config.ShowNotify.onSend and payload.toInventory == payload.source and payload.fromInventory ~= payload.toInventory and itemCount <= 0 then
-            NotifyAllInJob(payload.source, Strings.activate_tracker:format(xPlayer.getName()))
             Player(payload.source).state:set('zrx_tracker:hasItem', true, true)
+            NotifyAllInJob(payload.source, Strings.activate_tracker:format(Player(payload.source).state.name))
         elseif Config.ShowNotify.onRemove and payload.toInventory ~= payload.source and payload.fromInventory ~= payload.toInventory and itemCount - 1 <= 0 then
-            NotifyAllInJob(payload.source, Strings.deactivate_tracker:format(xPlayer.getName()))
             Player(payload.source).state:set('zrx_tracker:hasItem', false, true)
+
+            NotifyAllInJob(payload.source, Strings.deactivate_tracker:format(Player(payload.source).state.name))
             RemoveTracker(payload.source)
             TriggerClientEvent('zrx_tracker:client:removeAllTracker', payload.source)
         end
@@ -70,6 +72,9 @@ if ZRX_UTIL.inv == 'ox' then
         return true
     end, {
         print = true,
+        itemFilter = {
+            [Config.Item] = true
+        }
     })
 else
     if Config.ShowNotify.onSend then
@@ -84,8 +89,8 @@ else
                 return
             end
 
-            NotifyAllInJob(player, Strings.activate_tracker:format(xPlayer.getName()))
             Player(player).state:set('zrx_tracker:hasItem', true, true)
+            NotifyAllInJob(player, Strings.activate_tracker:format(xPlayer.getName()))
         end)
     end
 
@@ -101,8 +106,9 @@ else
                 return
             end
 
-            NotifyAllInJob(player, Strings.deactivate_tracker:format(xPlayer.getName()))
             Player(player).state:set('zrx_tracker:hasItem', false, true)
+
+            NotifyAllInJob(player, Strings.deactivate_tracker:format(xPlayer.getName()))
             RemoveTracker(player)
             TriggerClientEvent('zrx_tracker:client:removeAllTracker', player)
         end)
@@ -112,49 +118,52 @@ end
 
 if Config.Sync.live then
     AddEventHandler('playerEnteredScope', function(data)
-        local playerEntering, player = data.player, data['for']
-        playerEntering = tonumber(playerEntering)
-        player = tonumber(player)
+        local playerEntering, player = tonumber(data.player), tonumber(data['for'])
 
         TriggerClientEvent('zrx_tracker:client:removeTracker', player, playerEntering, false)
         TriggerClientEvent('zrx_tracker:client:trackPlayer', player, playerEntering)
     end)
 
     AddEventHandler('playerLeftScope', function(data)
-        local playerLeaving, player = data.player, data['for']
-        playerLeaving = tonumber(playerLeaving)
-        player = tonumber(player)
+        local playerLeaving, player = tonumber(data.player), tonumber(data['for'])
 
         TriggerClientEvent('zrx_tracker:client:removeTracker', player, playerLeaving, true)
 
-        local toReturnShared = {}
-        local jobIndex
-        local toReturn = GetBlipData()
+        local toReturn, sharedData, jobData = GetBlipData(), {}, {}
+        local jobIndex, job
 
         for player2, state in pairs(ZRX_UTIL.getPlayers()) do
-            toReturnShared = {}
+            sharedData = {}
+            job = Player(player2).state?.job?.name
+            jobData = toReturn[job]
 
-            if not Player(player2).state?.job?.name then
+            if not job or not jobData then
                 goto continue
             end
 
-            if not toReturn[Player(player2).state.job.name] then
+            if not toReturn[job] then
                 goto continue
             end
 
-            jobIndex = FindJobInTable(Player(player2).state.job.name)
+            jobIndex = FindJobInTable(job)
             if jobIndex then
-                for job, color in pairs(Config.SharedJobs[jobIndex]) do
-                    if toReturn[job] then
-                        for index, entry in pairs(toReturn[job]) do
-                            toReturnShared[index] = entry
+                for sharedJob, _ in pairs(Config.SharedJobs[jobIndex]) do
+                    for targetPlayer, entry in pairs(toReturn[sharedJob] or {}) do
+                        if ShouldInclude(entry, player) then
+                            sharedData[targetPlayer] = entry
                         end
                     end
                 end
 
-                TriggerClientEvent('zrx_tracker:client:getData', player2, toReturnShared)
+                TriggerClientEvent('zrx_tracker:client:getData', player, sharedData)
             else
-                TriggerClientEvent('zrx_tracker:client:getData', player2, toReturn[Player(player2).state.job.name])
+                for targetPlayer, entry in pairs(jobData) do
+                    if ShouldInclude(entry, player) then
+                        sharedData[targetPlayer] = entry
+                    end
+                end
+
+                TriggerClientEvent('zrx_tracker:client:getData', player, sharedData)
             end
 
             ::continue::
@@ -162,24 +171,27 @@ if Config.Sync.live then
     end)
 end
 
-AddEventHandler('esx:setJob', function(target, job)
-    local jobIndex
+AddEventHandler('esx:setJob', function(player, job, lastJob)
+    local jobIndex, jobTarget
+    local found = false
 
-    for player, state in pairs(ZRX_UTIL.getPlayers()) do
-        if not Player(player).state?.job?.name then
+    for target, state in pairs(ZRX_UTIL.getPlayers()) do
+        jobTarget = Player(target).state?.job?.name
+
+        if not jobTarget then
             goto continue
         end
 
-        jobIndex = FindJobInTable(Player(player).state.job.name)
-        if jobIndex then
-            for job2, color in pairs(Config.SharedJobs[jobIndex]) do
-                if job2 ~= job.name then
-                    TriggerClientEvent('zrx_tracker:client:removeTracker', player, target, true)
-                end
-            end
-        else
-            TriggerClientEvent('zrx_tracker:client:removeTracker', player, target, true)
+        if lastJob.name ~= jobTarget then
+            goto continue
         end
+
+        if job.name == jobTarget then
+            goto continue
+        end
+
+        TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, true)
+        print('Remove')
 
         ::continue::
     end

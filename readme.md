@@ -1,54 +1,68 @@
-# zRxnx's Advanced Tracker System
+# 🚀 zRxnx's Advanced Tracker System
 
-An advanced tracker system for FiveM
+An advanced and highly customizable tracking system for **FiveM**.
 
-**https://docs.zrxnx.at**
+📄 **[Documentation](https://docs.zrxnx.at)**  
+💬 **[Support Discord](https://discord.gg/mcN25FJ33K)**  
 
-**https://discord.gg/mcN25FJ33K**
+---
 
-## About
+## 🔍 About
 
-### Features
+### ✅ Features
 
-- Custom sync system
-- Responsible live sync withing onesync range
-- Disable in water or on death
-- Show Notify on action
-- Restricted to jobs
-- Change self player blip
-- Different types: main, automobile, bike, heli, boat, water, death
-- Color System
-- Blip settings: friendly, heading, height, vision, flash, siren, category, priority
-- Shared Job system: Shared GPS with other jobs
-- Update checker
-- Optimized
-- Synced
+- ⚙️ Custom sync system  
+- 📡 Responsible live sync within OneSync range  
+- 🌊 Automatically disables in water or on death  
+- 🔔 Optional notification on tracker actions  
+- 🔒 Usage restricted to specific jobs  
+- 🧍 Changeable self-player blip  
+- 🗂️ Supported types:  
+  `main`, `automobile`, `bike`, `heli`, `boat`, `plane`, `submarine`, `train`, `trailer`, `water`, `death`  
+- 🎨 Color system  
+- 📌 Blip settings:  
+  `friendly`, `heading`, `height`, `vision`, `flash`, `siren`, `category`, `priority`  
+- 🤝 Shared job system (shared GPS with other jobs)  
+- 🔄 Built-in update checker  
+- 🧠 Optimized and fully synced
 
-### API
+---
 
-#### Exports
+## 🧩 API
 
-- disableTracker (server)
+### 🔄 Exports
 
-#### Statebags
+- `disableTracker` (server)
 
-- zrx_tracker:disable
+### 📦 Statebags
 
-#### Events
+- `zrx_tracker:disable`  
+- `zrx_tracker:hasItem`  
+- `zrx_tracker:water`
 
-- zrx_tracker:server:onSend (server)
-- zrx_tracker:client:onSend (client)
+### 📡 Events
 
-## Requirements
+- `zrx_tracker:server:onSend` (server)  
+- `zrx_tracker:client:onSend` (client)
 
-- ox_lib (latest)
+---
 
-## Preview
+## 🛠️ Requirements
 
-### [Video](https://youtu.be/_o1Xb7hIAAs)
+- [`ox_lib`](https://overextended.dev/ox_lib) (latest version)
 
-## Installation
+---
 
-- Download script from Releases
-- Put script in your `resources` directory
-- Add `ensure zrx_tracker` in your `server.cfg`
+## 🎬 Preview
+
+▶️ [Watch the video](https://youtu.be/_o1Xb7hIAAs)
+
+---
+
+## 📦 Installation
+
+1. Download the script from the **Releases**  
+2. Place it inside your `resources` folder  
+3. Add the following to your `server.cfg`:
+   ```cfg
+   ensure zrx_tracker

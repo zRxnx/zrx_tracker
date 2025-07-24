@@ -1,6 +1,7 @@
 Config = {}
 
 Config.Item = 'phone'
+Config.OnlyShowSameBucket = true --| Only shows all players of the same bucket
 
 Config.Sync = {
     live = true, --| Syncs in onesync range 434
@@ -9,7 +10,7 @@ Config.Sync = {
 }
 
 Config.Disable = {
-    water = true, --| slows down the system
+    water = true,
     death = true,
 }
 
@@ -22,12 +23,9 @@ Config.ShowNotify = { --| onDeath and onWater only sends when Config.Disable is 
 }
 
 Config.Jobs = { --| Jobs that have tracker
-    __MODE__ = 'whitelist', --| whitelist / blacklist
+    __MODE__ = 'blacklist', --| whitelist / blacklist
 
-    police = true,
-    ambulance = true,
-    mechanic = true,
-    bennys = true,
+    unemployed = true,
 }
 
 Config.SharedJobs = { --| These jobs see each other tracker | color needs to be in rgba format
@@ -58,7 +56,7 @@ Config.Blip = {
         trailer = 479,
 
         water = 729,
-        death = 310,
+        death = 484,
     },
 
     color = { --| Supports RGBA format and gta default color
@@ -66,8 +64,8 @@ Config.Blip = {
         vehicle = { r = 211, g = 211, b = 211, a = 255 },
         water = { r = 173, g = 216, b = 230, a = 255 },
         death = { r = 139, g = 0, b = 0, a = 255 },
-        blue = { r = 0, g = 0, b = 255, a = 255 },
-        red = { r = 255, g = 0, b = 0, a = 255 },
+        blue = 68,
+        red = 59,
     },
 
     extra = {
@@ -78,13 +76,13 @@ Config.Blip = {
 
         short = false, --| Not recommended
 
-        friendly = true, --| Right blue ring
+        friendly = false, --| Right blue ring
         heading = true, --| Shows the direction the player is looking
         height = true, --| Shows a arrow if the player is over or under you
         vision = true, --| Shows the vision field of the player
 
         flash = false, --| Blip flash on, off, on, off ....
-        flashInt = 100, --| ms
+        flashInt = 400, --| ms
 
         siren = true, --| Siren flash if in vehicle that has siren on
     }

@@ -2,27 +2,18 @@
 RemoveBlips = function()
     for player, blip in pairs(ACTIVE_BLIPS) do
         RemoveBlip(blip)
-        ACTIVE_BLIPS[player] = nil
     end
+
+    ACTIVE_BLIPS = {}
 end
 
 CreateBlips = function(data)
-    --print(json.encode(data, { indent = true }))
-    local sprite
-    local color
-    local blip
-    local string
-    local entBlip
+    local sprite, color, blip, string, entBlip
     local sharedColor = {}
-
-    BREAK_SIREN = true
 
     for player, blipData in pairs(data) do
         sharedColor = {}
-        --print('blipData', player)
-        --print(json.encode(blipData, {indent = true}))
         if player == cache.serverId and Config.Blip.changeOwn then
-            --print('own')
             blip = GetMainPlayerBlipId()
         elseif blipData.isNear then
             entBlip = GetBlipFromEntity(blipData.entity)
@@ -33,8 +24,6 @@ CreateBlips = function(data)
                 ACTIVE_CLIENT_BLIPS[player] = blip
             end
         elseif player ~= cache.serverId then
-            --print('other', player)
-            print(#(vec3(blipData.coords.x, blipData.coords.y, blipData.coords.z) - GetEntityCoords(cache.ped)))
             if #(blipData.coords - GetEntityCoords(cache.ped)) < 424 then
                 goto continue
             end
@@ -49,6 +38,10 @@ CreateBlips = function(data)
             goto continue
         end
 
+        if not SIREN_DATA[blip] then
+            SIREN_DATA[blip] = {}
+        end
+
         sprite = Config.Blip.types.main
         color = Config.Blip.color.default
         string = ('[%s] %s'):format(player, blipData.name)
@@ -58,7 +51,7 @@ CreateBlips = function(data)
             sprite = Config.Blip.types[blipData.vehType]
         end
 
-        if blipData.isInWater then
+        if blipData.water then
             color = Config.Blip.color.water
             sprite = Config.Blip.types.water
         end
@@ -70,14 +63,19 @@ CreateBlips = function(data)
 
         SetBlipSprite(blip, sprite)
 
-        if type(color) == 'table' then
-            SetBlipColour(blip, tonumber(('0x%02X%02X%02X%02X'):format(color.r, color.g, color.b, color.a)))
+        if blipData.siren then
+            SIREN_DATA[blip].siren = true
         else
-            SetBlipColour(blip, color)
+            SIREN_DATA[blip].siren = false
+
+            if type(color) == 'table' then
+                SetBlipColour(blip, tonumber(('0x%02X%02X%02X%02X'):format(color.r, color.g, color.b, color.a)))
+            else
+                SetBlipColour(blip, color)
+            end
         end
 
         if blipData.shared then
-            --print('shared', player, blipData.sharedIndex, blipData.job)
             sharedColor = Config.SharedJobs[blipData.sharedIndex][blipData.job]
 
             ShowCrewIndicatorOnBlip(blip, blipData.shared)
@@ -110,25 +108,12 @@ CreateBlips = function(data)
 
         ::continue::
     end
-
-    if Config.Blip.extra.siren then
-        CreateThread(function()
-            StartSirenThread(data)
-        end)
-    end
 end
 
 GetBlipData = function()
-    local player
-    local playerPed
+    local player, playerPed, jobIndex, job, name, hasItem
+    local water, deathStatus, vehicle = false, false, 0
     local toReturn = {}
-    local isInWater = false
-    local deathStatus = false
-    local jobIndex
-    local vehicle = 0
-    local job
-    local name
-    local hasItem
 
     for index, playerId in pairs(GetActivePlayers()) do
         player = GetPlayerServerId(playerId)
@@ -141,14 +126,17 @@ GetBlipData = function()
             goto continue
         end
 
-        if Config.Jobs.__MODE__ == 'whitelist' and not Config.Jobs[job] or Config.Jobs[job] then
+        if (Config.Jobs.__MODE__ == 'whitelist' and not Config.Jobs[job]) or Config.Jobs[job] then
             goto continue
         end
 
-        if ZRX_UTIL.fwObj.PlayerData.job.name ~= job then
-            goto continue
+        jobIndex = FindJobInTable(job)
+        if not jobIndex then
+            if LocalPlayer.state.job.name ~= job then
+                goto continue
+            end
         end
-
+        
         if Player(player).state['zrx_tracker:disable'] then
             goto continue
         end
@@ -160,18 +148,19 @@ GetBlipData = function()
         if not hasItem then
             goto continue
         end
+        
 
         toReturn[player] = {}
 
-        isInWater = IsEntityInWater(playerPed)
+        water = IsEntityInWater(playerPed)
 
-        if isInWater then
+        if water then
             if Config.Disable.water then
                 toReturn[player] = nil
                 goto continue
             end
 
-            toReturn[player].isInWater = true
+            toReturn[player].water = true
         end
 
         deathStatus = Config.GetDeathStatus(player)
@@ -185,7 +174,6 @@ GetBlipData = function()
             toReturn[player].death = true
         end
 
-        jobIndex = FindJobInTable(job)
         if jobIndex then
             toReturn[player].shared = true
             toReturn[player].sharedIndex = jobIndex
@@ -213,45 +201,4 @@ GetBlipData = function()
     end
 
     return toReturn
-end
-
-StartSirenThread = function(data)
-    BREAK_SIREN = true
-    Wait(500)
-    BREAK_SIREN = false
-
-    while true do
-        if BREAK_SIREN then
-            return
-        end
-
-        for player, blipData in pairs(data) do
-            if not blipData.siren then
-                goto continue
-            end
-
-            print(data[player].sirenColor)
-            if data[player].sirenColor then
-                data[player].sirenColor = false
-
-                if type(Config.Blip.color.blue) == 'table' then
-                    SetBlipColour(ACTIVE_BLIPS[player], tonumber(('0x%02X%02X%02X%02X'):format(Config.Blip.color.blue.r, Config.Blip.color.blue.g, Config.Blip.color.blue.b, Config.Blip.color.blue.a)))
-                else
-                    SetBlipColour(ACTIVE_BLIPS[player], Config.Blip.color.blue)
-                end
-            else
-                data[player].sirenColor = true
-
-                if type(Config.Blip.color.red) == 'table' then
-                    SetBlipColour(ACTIVE_BLIPS[player], tonumber(('0x%02X%02X%02X%02X'):format(Config.Blip.color.red.r, Config.Blip.color.red.g, Config.Blip.color.red.b, Config.Blip.color.red.a)))
-                else
-                    SetBlipColour(ACTIVE_BLIPS[player], Config.Blip.color.red)
-                end
-            end
-
-            ::continue::
-        end
-
-        Wait(800)
-    end
 end

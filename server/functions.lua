@@ -1,9 +1,7 @@
 GetBlipData = function()
     local toReturn = {}
-    local xPlayer
-    local vehicle = 0
-    local ped = 0
-    local jobIndex
+    local xPlayer, jobIndex, water, deathStatus
+    local vehicle, ped = 0, 0
 
     for player, state in pairs(ZRX_UTIL.getPlayers()) do
         xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
@@ -44,30 +42,29 @@ GetBlipData = function()
 
         toReturn[xPlayer.job.name][player] = {}
 
-        local isInWater = lib.callback.await('zrx_tracker:client:isInWater', player)
+        water = Player(player).state['zrx_tracker:water']
+        toReturn[xPlayer.job.name][player].water = water
 
-        if isInWater and Config.Disable.water then
-            goto continue
-        end
-
-        toReturn[xPlayer.job.name][player].isInWater = isInWater
-
-        if isInWater then
+        if water then
             if Config.ShowNotify.onWater and not NOTIFY[player].water and Config.Disable.water then
                 NOTIFY[player].water = true
+
                 NotifyAllInJob(player, Strings.deactivate_tracker_water:format(xPlayer.getName()))
             end
         elseif NOTIFY[player].water and Config.Disable.water then
             NOTIFY[player].water = false
+
             NotifyAllInJob(player, Strings.activate_tracker_water:format(xPlayer.getName()))
         end
 
-        local deathStatus = Config.GetDeathStatus(player)
+        print(Config.Disable.water, water)
+        if Config.Disable.water and water then
+            toReturn[xPlayer.job.name][player] = nil
 
-        if deathStatus and Config.Disable.death then
             goto continue
         end
 
+        deathStatus = Config.GetDeathStatus(player)
         toReturn[xPlayer.job.name][player].death = deathStatus
 
         if deathStatus then
@@ -82,6 +79,12 @@ GetBlipData = function()
             NotifyAllInJob(player, Strings.activate_tracker_death:format(xPlayer.getName()))
         end
 
+        if Config.Disable.death and deathStatus then
+            toReturn[xPlayer.job.name][player] = nil
+
+            goto continue
+        end
+
         jobIndex = FindJobInTable(xPlayer.job.name)
         if jobIndex then
             toReturn[xPlayer.job.name][player].shared = true
@@ -93,6 +96,7 @@ GetBlipData = function()
         toReturn[xPlayer.job.name][player].heading = GetEntityHeading(ped)
         toReturn[xPlayer.job.name][player].name = xPlayer.getName()
         toReturn[xPlayer.job.name][player].job = xPlayer.job.name
+        toReturn[xPlayer.job.name][player].bucket = GetPlayerRoutingBucket(tostring(player))
         vehicle = GetVehiclePedIsIn(ped, false)
 
         toReturn[xPlayer.job.name][player].vehType = ''
@@ -112,21 +116,22 @@ GetBlipData = function()
 end
 
 NotifyAllInJob = function(player, string)
-    local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
     local xTarget
+    local job
 
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
+        job = Player(player).state?.job?.name
         xTarget = ZRX_UTIL.fwObj.GetPlayerFromId(target)
 
         if player == target then
             goto continue
         end
 
-        if not xPlayer or not xTarget then
+        if not job or not xTarget then
             goto continue
         end
 
-        if xPlayer.job.name ~= xTarget.job.name then
+        if job ~= xTarget.job.name then
             goto continue
         end
 
@@ -147,17 +152,18 @@ NotifyAllInJob = function(player, string)
 end
 
 RemoveTracker = function(player)
-    local xPlayer = ZRX_UTIL.fwObj.GetPlayerFromId(player)
-    local xTarget
+    local job
+    local jobTarget
 
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
-        xTarget = ZRX_UTIL.fwObj.GetPlayerFromId(target)
+        job = Player(player).state?.job?.name
+        jobTarget = Player(target).state?.job?.name
 
-        if not xPlayer or not xTarget then
+        if not job or not jobTarget then
             goto continue
         end
 
-        if xPlayer.job.name ~= xTarget.job.name then
+        if job ~= jobTarget then
             goto continue
         end
 
@@ -166,6 +172,10 @@ RemoveTracker = function(player)
 
         ::continue::
     end
+end
+
+ShouldInclude = function(entry, player)
+    return not Config.OnlyShowSameBucket or entry.bucket == GetPlayerRoutingBucket(tostring(player))
 end
 
 DisableTracker = function(player, state)
