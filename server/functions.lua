@@ -57,7 +57,6 @@ GetBlipData = function()
             NotifyAllInJob(player, Strings.activate_tracker_water:format(xPlayer.getName()))
         end
 
-        print(Config.Disable.water, water)
         if Config.Disable.water and water then
             toReturn[xPlayer.job.name][player] = nil
 
@@ -116,11 +115,14 @@ GetBlipData = function()
 end
 
 NotifyAllInJob = function(player, string)
+    local job = Player(player).state?.job?.name
     local xTarget
-    local job
+
+    if not job then
+        return
+    end
 
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
-        job = Player(player).state?.job?.name
         xTarget = ZRX_UTIL.fwObj.GetPlayerFromId(target)
 
         if player == target then
@@ -152,11 +154,14 @@ NotifyAllInJob = function(player, string)
 end
 
 RemoveTracker = function(player)
-    local job
+    local job = Player(player).state?.job?.name
     local jobTarget
 
+    if not job then
+        return
+    end
+
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
-        job = Player(player).state?.job?.name
         jobTarget = Player(target).state?.job?.name
 
         if not job or not jobTarget then
@@ -174,8 +179,8 @@ RemoveTracker = function(player)
     end
 end
 
-ShouldInclude = function(entry, player)
-    return not Config.OnlyShowSameBucket or entry.bucket == GetPlayerRoutingBucket(tostring(player))
+ShouldInclude = function(bucket, player)
+    return not Config.OnlyShowSameBucket or bucket == GetPlayerRoutingBucket(tostring(player))
 end
 
 DisableTracker = function(player, state)

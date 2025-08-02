@@ -26,14 +26,14 @@ CreateThread(function()
             if sharedJobs then
                 for sharedJob, _ in pairs(sharedJobs) do
                     for targetPlayer, entry in pairs(toReturn[sharedJob] or {}) do
-                        if ShouldInclude(entry, player) then
+                        if ShouldInclude(entry.bucket, player) then
                             toReturnShared[targetPlayer] = entry
                         end
                     end
                 end
             else
                 for targetPlayer, entry in pairs(jobData) do
-                    if ShouldInclude(entry, player) then
+                    if ShouldInclude(entry.bucket, player) then
                         toReturnShared[targetPlayer] = entry
                     end
                 end
@@ -121,7 +121,7 @@ if Config.Sync.live then
         local playerEntering, player = tonumber(data.player), tonumber(data['for'])
 
         TriggerClientEvent('zrx_tracker:client:removeTracker', player, playerEntering, false)
-        TriggerClientEvent('zrx_tracker:client:trackPlayer', player, playerEntering)
+        TriggerClientEvent('zrx_tracker:client:trackPlayer', player)
     end)
 
     AddEventHandler('playerLeftScope', function(data)
@@ -149,7 +149,7 @@ if Config.Sync.live then
             if jobIndex then
                 for sharedJob, _ in pairs(Config.SharedJobs[jobIndex]) do
                     for targetPlayer, entry in pairs(toReturn[sharedJob] or {}) do
-                        if ShouldInclude(entry, player) then
+                        if ShouldInclude(entry.bucket, player) then
                             sharedData[targetPlayer] = entry
                         end
                     end
@@ -158,7 +158,7 @@ if Config.Sync.live then
                 TriggerClientEvent('zrx_tracker:client:getData', player, sharedData)
             else
                 for targetPlayer, entry in pairs(jobData) do
-                    if ShouldInclude(entry, player) then
+                    if ShouldInclude(entry.bucket, player) then
                         sharedData[targetPlayer] = entry
                     end
                 end
@@ -172,26 +172,49 @@ if Config.Sync.live then
 end
 
 AddEventHandler('esx:setJob', function(player, job, lastJob)
-    local jobIndex, jobTarget
-    local found = false
+    local newJobName = job.name
+    local oldJobName = lastJob.name
+    local jobIndex = FindJobInTable(newJobName)
+    local targetJob
+
+    for target, _ in pairs(ZRX_UTIL.getPlayers()) do
+        targetJob = Player(target).state?.job?.name
+
+        if not targetJob then
+            goto continue
+        end
+
+        if jobIndex and Config.SharedJobs[jobIndex] then
+            if Config.SharedJobs[jobIndex][targetJob] and Config.SharedJobs[jobIndex][newJobName] then
+                goto continue
+            end
+        end
+
+        if oldJobName == targetJob and newJobName ~= targetJob then
+            TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, false)
+        end
+
+        ::continue::
+    end
+end)
+
+RegisterNetEvent('onPlayerBucketChange', function(player, newBucket, oldBucket)
+    local jobTarget, job = Player(player).state?.job?.name
+
+    if not job then
+        return
+    end
 
     for target, state in pairs(ZRX_UTIL.getPlayers()) do
         jobTarget = Player(target).state?.job?.name
 
-        if not jobTarget then
+        if not jobTarget or not job then
             goto continue
         end
 
-        if lastJob.name ~= jobTarget then
-            goto continue
+        if newBucket ~= GetPlayerRoutingBucket(target) then
+            TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, false)
         end
-
-        if job.name == jobTarget then
-            goto continue
-        end
-
-        TriggerClientEvent('zrx_tracker:client:removeTracker', target, player, true)
-        print('Remove')
 
         ::continue::
     end
